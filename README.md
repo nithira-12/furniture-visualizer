@@ -1,1 +1,1 @@
-# furniture-visualizor
+# furniture-visualizer
