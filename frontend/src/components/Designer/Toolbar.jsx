@@ -119,7 +119,8 @@ function Toolbar({
   onColourChange,
   onScaleChange,
   onShadeChange,
-}) {
+  onRotate,
+})  {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -183,6 +184,16 @@ function Toolbar({
               onClick={handleDelete}
             >
               Remove Selected
+            </button>
+          )}
+
+          {/* Rotate */}
+          {selectedFurniture && (
+            <button
+              style={styles.button}
+              onClick={onRotate}
+            >
+              Rotate 90
             </button>
           )}
 

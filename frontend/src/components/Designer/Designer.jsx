@@ -80,11 +80,17 @@ function Designer() {
     setHistory((prev) => [...prev, currentFurniture]);
   };
 
-  const handleAddFurniture = (item) => {
+ const handleAddFurniture = (item) => {
     saveHistory(furniture);
-    setFurniture((prev) => [...prev, { ...item, id: Date.now() }]);
+    setFurniture((prev) => [...prev, { ...item, id: Date.now(), rotation: 0 }]);
   };
 
+  const handleRotate = () => {
+    saveHistory(furniture);
+    setFurniture((prev) =>
+      prev.map((f) => (f.id === selectedId ? { ...f, rotation: ((f.rotation || 0) + 90) % 360 } : f))
+    );
+  };
   const handleMoveFurniture = (id, x, y) => {
     setFurniture((prev) =>
       prev.map((f) => (f.id === id ? { ...f, x, y } : f))
@@ -197,6 +203,7 @@ function Designer() {
         onColourChange={handleColourChange}
         onScaleChange={handleScaleChange}
         onShadeChange={handleShadeChange}
+        onRotate={handleRotate}
       />
     </div>
   );

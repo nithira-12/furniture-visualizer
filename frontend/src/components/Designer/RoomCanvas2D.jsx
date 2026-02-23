@@ -9,6 +9,7 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const meshMapRef = useRef({});
+  const labelMapRef = useRef({});
   const animationRef = useRef(null);
   const isDraggingRef = useRef(false);
   const selectedMeshRef = useRef(null);
@@ -16,11 +17,9 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
   const furnitureRef = useRef(furniture);
   const selectedIdRef = useRef(selectedId);
 
-  // Keep refs in sync
   useEffect(() => { furnitureRef.current = furniture; }, [furniture]);
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
-  // Initialize scene ONCE
   useEffect(() => {
     const mount = mountRef.current;
     const width = mount.clientWidth;
@@ -75,11 +74,26 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
     grid.position.y = 0.05;
     scene.add(grid);
 
-    // Animation loop — reads from refs so no re-renders needed
+    // Helper to create label texture
+    const makeLabel = (text) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    };
+
+    // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
-
-      // Sync furniture meshes every frame
       const currentFurniture = furnitureRef.current;
       const currentSelectedId = selectedIdRef.current;
       const existingIds = new Set(currentFurniture.map((f) => String(f.id)));
@@ -88,7 +102,9 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
       Object.keys(meshMapRef.current).forEach((id) => {
         if (!existingIds.has(id)) {
           scene.remove(meshMapRef.current[id]);
+          scene.remove(labelMapRef.current[id]);
           delete meshMapRef.current[id];
+          delete labelMapRef.current[id];
         }
       });
 
@@ -104,15 +120,33 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
           const mesh = meshMapRef.current[String(item.id)];
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
           mesh.material.color.set(colour);
+          mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
+
+          // Update label position
+          if (labelMapRef.current[String(item.id)]) {
+            labelMapRef.current[String(item.id)].position.set(
+              item.x * SCALE, 3, item.y * SCALE
+            );
+          }
         } else {
+          // Main furniture box
           const mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(w, 6, d),
+            new THREE.BoxGeometry(w, 4, d),
             new THREE.MeshBasicMaterial({ color: colour })
           );
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
           mesh.userData = { furnitureId: item.id };
           scene.add(mesh);
           meshMapRef.current[String(item.id)] = mesh;
+
+          // Label sprite
+          const labelTexture = makeLabel(item.label);
+          const labelMaterial = new THREE.SpriteMaterial({ map: labelTexture });
+          const sprite = new THREE.Sprite(labelMaterial);
+          sprite.scale.set(w * 0.9, d * 0.4, 1);
+          sprite.position.set(item.x * SCALE, 3, item.y * SCALE);
+          scene.add(sprite);
+          labelMapRef.current[String(item.id)] = sprite;
         }
       });
 
@@ -183,6 +217,11 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
     const newZ = pos.z - offsetRef.current.z;
     selectedMeshRef.current.position.x = newX;
     selectedMeshRef.current.position.z = newZ;
+    if (labelMapRef.current[String(selectedMeshRef.current.userData.furnitureId)]) {
+      labelMapRef.current[String(selectedMeshRef.current.userData.furnitureId)].position.set(
+        newX, 3, newZ
+      );
+    }
     onMoveFurniture(
       selectedMeshRef.current.userData.furnitureId,
       newX / SCALE,

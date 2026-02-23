@@ -2,7 +2,7 @@ import React from 'react';
 
 const FURNITURE_ITEMS = [
   { type: 'sofa', label: 'Sofa', width: 2, height: 0.9, colour: '#8B7355' },
-  { type: 'armchair', label: 'Armchair', width: 1, height: 1, colour: '#A0856C' },
+  { type: 'armchair', label: 'Armchair', width: 0.8, height: 0.5, colour: '#A0856C' },
   { type: 'diningTable', label: 'Dining Table', width: 1.8, height: 1, colour: '#6B4F3A' },
   { type: 'sideTable', label: 'Side Table', width: 0.6, height: 0.6, colour: '#7D6347' },
   { type: 'bed', label: 'Bed', width: 1.6, height: 2, colour: '#9E8B7D' },
