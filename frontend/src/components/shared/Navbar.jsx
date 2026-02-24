@@ -14,11 +14,27 @@ const styles = {
     top: '0',
     zIndex: '100',
   },
+  left: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '24px',
+  },
   brand: {
     fontSize: '22px',
     fontWeight: '700',
     color: '#5C3D2E',
     letterSpacing: '-0.5px',
+    cursor: 'pointer',
+  },
+  dashboardButton: {
+    padding: '8px 18px',
+    backgroundColor: 'transparent',
+    border: '1.5px solid #5C3D2E',
+    color: '#5C3D2E',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
   },
   right: {
     display: 'flex',
@@ -38,6 +54,7 @@ const styles = {
     borderRadius: '8px',
     fontSize: '14px',
     fontWeight: '600',
+    cursor: 'pointer',
   },
 };
 
@@ -53,7 +70,14 @@ function Navbar() {
 
   return (
     <nav style={styles.navbar}>
-      <div style={styles.brand}>FurnishSpace</div>
+      <div style={styles.left}>
+        <div style={styles.brand} onClick={() => navigate('/dashboard')}>
+          FurnishSpace
+        </div>
+        <button style={styles.dashboardButton} onClick={() => navigate('/dashboard')}>
+          My Designs
+        </button>
+      </div>
       <div style={styles.right}>
         <span style={styles.userName}>{user.name}</span>
         <button style={styles.logoutButton} onClick={handleLogout}>

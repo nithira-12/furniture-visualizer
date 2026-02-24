@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../shared/Navbar';
 import RoomSetup from './RoomSetup';
@@ -59,28 +59,31 @@ function Designer() {
   const [history, setHistory] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [view, setView] = useState('2D');
+  const [loaded, setLoaded] = useState(false);
 
   const selectedFurniture = furniture.find((f) => f.id === selectedId) || null;
 
-  const handleRoomStart = (roomData) => {
-    // Check if editing existing design
+  useEffect(() => {
     const existing = localStorage.getItem('currentDesign');
     if (existing) {
       const parsed = JSON.parse(existing);
       setRoom(parsed);
       setFurniture(parsed.furniture || []);
       localStorage.removeItem('currentDesign');
-    } else {
-      setRoom(roomData);
-      setFurniture([]);
     }
+    setLoaded(true);
+  }, []);
+
+  const handleRoomStart = (roomData) => {
+    setRoom(roomData);
+    setFurniture([]);
   };
 
   const saveHistory = (currentFurniture) => {
     setHistory((prev) => [...prev, currentFurniture]);
   };
 
- const handleAddFurniture = (item) => {
+  const handleAddFurniture = (item) => {
     saveHistory(furniture);
     setFurniture((prev) => [...prev, { ...item, id: Date.now(), rotation: 0 }]);
   };
@@ -91,6 +94,7 @@ function Designer() {
       prev.map((f) => (f.id === selectedId ? { ...f, rotation: ((f.rotation || 0) + 90) % 360 } : f))
     );
   };
+
   const handleMoveFurniture = (id, x, y) => {
     setFurniture((prev) =>
       prev.map((f) => (f.id === id ? { ...f, x, y } : f))
@@ -142,16 +146,13 @@ function Designer() {
       furniture,
       updatedAt: new Date().toISOString(),
     };
-
     const existing = JSON.parse(localStorage.getItem('designs') || '[]');
     const index = existing.findIndex((d) => d.id === design.id);
-
     if (index >= 0) {
       existing[index] = design;
     } else {
       existing.push(design);
     }
-
     localStorage.setItem('designs', JSON.stringify(existing));
   };
 
@@ -159,6 +160,10 @@ function Designer() {
     setView(newView);
   };
 
+  // Wait for localStorage check before rendering anything
+  if (!loaded) return null;
+
+  // Show room setup if no room yet
   if (!room) {
     return <RoomSetup onStart={handleRoomStart} />;
   }
@@ -190,8 +195,7 @@ function Designer() {
             />
           </div>
         </div>
-        </div>
-      
+      </div>
 
       <Toolbar
         view={view}

@@ -189,6 +189,7 @@ function RoomCanvas3D({ room, furniture }) {
   useEffect(() => { furnitureRef.current = furniture; }, [furniture]);
 
   useEffect(() => {
+     
     const mount = mountRef.current;
     const width = mount.clientWidth;
     const height = mount.clientHeight;
@@ -248,7 +249,7 @@ function RoomCanvas3D({ room, furniture }) {
           color: wallColour, 
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.2,
         })
       );
       wall.position.set(px, py, pz);
@@ -281,6 +282,21 @@ function RoomCanvas3D({ room, furniture }) {
     mount.addEventListener('mousemove', handleMouseMove);
     mount.addEventListener('mouseup', handleMouseUp);
 
+    // Build initial furniture
+furniture.forEach((item) => {
+  const group = buildFurnitureMesh(item);
+  group.position.set(item.x * SCALE, 0, item.y * SCALE);
+  group.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
+  group.userData = { 
+    furnitureId: item.id,
+    colour: item.colour,
+    shade: item.shade,
+    scale: item.scale,
+    rotation: item.rotation
+  };
+  scene.add(group);
+  meshMapRef.current[String(item.id)] = group;
+});
     // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);

@@ -17,13 +17,19 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
   const furnitureRef = useRef(furniture);
   const selectedIdRef = useRef(selectedId);
 
-  useEffect(() => { furnitureRef.current = furniture; }, [furniture]);
+  useEffect(() => { furnitureRef.current = furniture; }, [furniture]); 
   useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
-  useEffect(() => {
-    const mount = mountRef.current;
-    const width = mount.clientWidth;
-    const height = mount.clientHeight;
+   useEffect(() => { 
+
+     meshMapRef.current = {};
+     labelMapRef.current = {};
+    
+     const mount = mountRef.current; 
+  
+     const width = mount.clientWidth;
+  
+     const height = mount.clientHeight;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(room.wallColour || '#F5F0EB');
@@ -120,7 +126,6 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
           const mesh = meshMapRef.current[String(item.id)];
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
           mesh.material.color.set(colour);
-          mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
 
           // Update label position
           if (labelMapRef.current[String(item.id)]) {
@@ -131,7 +136,7 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
         } else {
           // Main furniture box
           const mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(w, 4, d),
+            new THREE.BoxGeometry(w, 3, d),
             new THREE.MeshBasicMaterial({ color: colour })
           );
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
