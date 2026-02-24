@@ -126,6 +126,7 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
           const mesh = meshMapRef.current[String(item.id)];
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
           mesh.material.color.set(colour);
+          mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
 
           // Update label position
           if (labelMapRef.current[String(item.id)]) {
