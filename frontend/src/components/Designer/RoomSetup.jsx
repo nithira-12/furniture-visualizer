@@ -1,5 +1,20 @@
 import React, { useState } from 'react';
 
+const ROOM_TYPES = [
+  { name: 'Living Room', value: 'living' },
+  { name: 'Bedroom', value: 'bedroom' },
+  { name: 'Dining Room', value: 'dining' },
+  { name: 'Home Office', value: 'office' },
+  { name: 'Kitchen', value: 'kitchen' },
+  { name: 'Bathroom', value: 'bathroom' },
+];
+
+const LIGHTING_STYLES = [
+  { name: 'Bright', value: 'bright' },
+  { name: 'Warm', value: 'warm' },
+  { name: 'Dim', value: 'dim' },
+];
+
 const WALL_COLOURS = [
   { name: 'Cream White', value: '#F5F0EB' },
   { name: 'Soft Grey', value: '#E8E8E8' },
@@ -29,48 +44,53 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 300,
     padding: '20px',
+    backdropFilter: 'blur(2px)',
   },
   modal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '20px',
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
     padding: '40px',
     width: '100%',
-    maxWidth: '480px',
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+    maxWidth: '520px',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12)',
+    border: '1px solid rgba(0,0,0,0.05)',
   },
   header: {
     marginBottom: '32px',
   },
   title: {
-    fontSize: '24px',
+    fontSize: '28px',
     fontWeight: '700',
-    color: '#2C1810',
-    marginBottom: '6px',
+    color: '#111827',
+    marginBottom: '8px',
   },
   subtitle: {
     fontSize: '14px',
-    color: '#8B6E5A',
+    color: '#6b7280',
   },
   formGroup: {
     marginBottom: '24px',
   },
   label: {
     display: 'block',
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
-    color: '#2C1810',
+    color: '#111827',
     marginBottom: '8px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
   },
   hint: {
     fontSize: '12px',
-    color: '#8B6E5A',
-    marginTop: '4px',
+    color: '#9ca3af',
+    marginTop: '6px',
+    fontStyle: 'italic',
   },
   row: {
     display: 'grid',
@@ -80,39 +100,44 @@ const styles = {
   colourGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '10px',
-    marginTop: '8px',
+    gap: '12px',
+    marginTop: '12px',
   },
   colourOption: {
-    height: '48px',
-    borderRadius: '10px',
+    height: '50px',
+    borderRadius: '8px',
     cursor: 'pointer',
-    border: '3px solid transparent',
-    transition: 'border-color 0.2s, transform 0.2s',
+    border: '2px solid transparent',
+    transition: 'all 0.2s',
   },
   colourSelected: {
-    border: '3px solid #5C3D2E',
-    transform: 'scale(1.08)',
+    border: '2px solid #2563eb',
+    boxShadow: '0 0 0 1px #2563eb',
+    transform: 'scale(1.05)',
   },
   startButton: {
     width: '100%',
-    padding: '16px',
-    backgroundColor: '#5C3D2E',
-    color: '#FFFFFF',
-    fontSize: '16px',
+    padding: '14px 16px',
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+    fontSize: '15px',
     fontWeight: '600',
-    borderRadius: '12px',
-    marginTop: '8px',
+    borderRadius: '8px',
+    marginTop: '12px',
     letterSpacing: '0.3px',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   errorBox: {
-    backgroundColor: '#FEE2E2',
-    border: '1px solid #FECACA',
-    color: '#DC2626',
+    backgroundColor: '#fee2e2',
+    border: '1px solid #fecaca',
+    color: '#dc2626',
     padding: '12px 16px',
     borderRadius: '8px',
     fontSize: '13px',
     marginBottom: '20px',
+    fontWeight: '500',
   },
 };
 
@@ -120,6 +145,9 @@ function RoomSetup({ onStart }) {
   const [name, setName] = useState('');
   const [width, setWidth] = useState('');
   const [length, setLength] = useState('');
+  const [height, setHeight] = useState('3');
+  const [roomType, setRoomType] = useState('living');
+  const [lighting, setLighting] = useState('warm');
   const [wallColour, setWallColour] = useState('#F5F0EB');
   const [floorColour, setFloorColour] = useState('#C8A97E');
   const [error, setError] = useState('');
@@ -144,6 +172,9 @@ function RoomSetup({ onStart }) {
       name: name.trim(),
       width: Number(width),
       length: Number(length),
+      height: Number(height),
+      roomType,
+      lighting,
       wallColour,
       floorColour,
       id: Date.now(),
@@ -178,31 +209,93 @@ function RoomSetup({ onStart }) {
           />
         </div>
 
+        <div style={styles.row}>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Room Width (m)</label>
+            <input
+              type="number"
+              placeholder="e.g. 5"
+              value={width}
+              onChange={(e) => setWidth(e.target.value)}
+              min="1"
+              step="0.5"
+            />
+          </div>
+
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Room Length (m)</label>
+            <input
+              type="number"
+              placeholder="e.g. 6"
+              value={length}
+              onChange={(e) => setLength(e.target.value)}
+              min="1"
+              step="0.5"
+            />
+          </div>
+        </div>
+
         <div style={styles.formGroup}>
-          <label style={styles.label}>Room Dimensions (meters)</label>
-          <div style={styles.row}>
-            <div>
-              <input
-                type="number"
-                placeholder="Width"
-                value={width}
-                onChange={(e) => setWidth(e.target.value)}
-                min="1"
-                max="20"
-              />
-              <div style={styles.hint}>Width</div>
-            </div>
-            <div>
-              <input
-                type="number"
-                placeholder="Length"
-                value={length}
-                onChange={(e) => setLength(e.target.value)}
-                min="1"
-                max="20"
-              />
-              <div style={styles.hint}>Length</div>
-            </div>
+          <label style={styles.label}>Room Type</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            {ROOM_TYPES.map((type) => (
+              <button
+                key={type.value}
+                onClick={() => setRoomType(type.value)}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: roomType === type.value ? '2px solid #2563eb' : '1px solid #d1d5db',
+                  backgroundColor: roomType === type.value ? '#dbeafe' : '#f9fafb',
+                  color: roomType === type.value ? '#2563eb' : '#374151',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {type.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Ceiling Height (meters)</label>
+          <input
+            type="number"
+            placeholder="e.g. 3"
+            value={height}
+            onChange={(e) => setHeight(e.target.value)}
+            min="2"
+            max="5"
+            step="0.5"
+          />
+          <div style={styles.hint}>Standard height is 3m</div>
+        </div>
+
+        <div style={styles.formGroup}>
+          <label style={styles.label}>Lighting Style</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {LIGHTING_STYLES.map((light) => (
+              <button
+                key={light.value}
+                onClick={() => setLighting(light.value)}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: lighting === light.value ? '2px solid #2563eb' : '1px solid #d1d5db',
+                  backgroundColor: lighting === light.value ? '#dbeafe' : '#f9fafb',
+                  color: lighting === light.value ? '#2563eb' : '#374151',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {light.name}
+              </button>
+            ))}
           </div>
         </div>
 

@@ -12,7 +12,7 @@ const styles = {
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#F5F0EB',
+    backgroundColor: '#f8f9fa',
     overflow: 'hidden',
   },
   body: {
@@ -24,31 +24,36 @@ const styles = {
     flex: 1,
     position: 'relative',
     overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    borderRight: '1px solid #e5e7eb',
   },
   roomInfo: {
     position: 'absolute',
-    top: '12px',
-    left: '12px',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: '10px',
-    padding: '10px 14px',
+    top: '16px',
+    left: '16px',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: '8px',
+    padding: '12px 16px',
     fontSize: '13px',
-    color: '#2C1810',
+    color: '#374151',
     fontWeight: '600',
     zIndex: 10,
     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    border: '1px solid #e5e7eb',
   },
   viewBadge: {
     position: 'absolute',
-    top: '12px',
-    right: '12px',
-    backgroundColor: '#5C3D2E',
-    color: '#FFFFFF',
-    borderRadius: '8px',
+    top: '16px',
+    right: '16px',
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+    borderRadius: '6px',
     padding: '6px 14px',
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: '700',
     zIndex: 10,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
 };
 
@@ -123,6 +128,20 @@ function Designer() {
     saveHistory(furniture);
     setFurniture((prev) =>
       prev.map((f) => (f.id === selectedId ? { ...f, shade } : f))
+    );
+  };
+
+  const handleWidthChange = (width) => {
+    saveHistory(furniture);
+    setFurniture((prev) =>
+      prev.map((f) => (f.id === selectedId ? { ...f, actualWidth: Math.max(0.3, width) } : f))
+    );
+  };
+
+  const handleHeightChange = (height) => {
+    saveHistory(furniture);
+    setFurniture((prev) =>
+      prev.map((f) => (f.id === selectedId ? { ...f, actualHeight: Math.max(0.3, height) } : f))
     );
   };
 
@@ -207,6 +226,8 @@ function Designer() {
         onColourChange={handleColourChange}
         onScaleChange={handleScaleChange}
         onShadeChange={handleShadeChange}
+        onWidthChange={handleWidthChange}
+        onHeightChange={handleHeightChange}
         onRotate={handleRotate}
       />
     </div>

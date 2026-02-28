@@ -13,8 +13,8 @@ const buildFurnitureMesh = (item) => {
   const darkMat = () => new THREE.MeshLambertMaterial({ color: baseColour.clone().multiplyScalar(0.7) });
 
   const group = new THREE.Group();
-  const w = item.width * SCALE * scale;
-  const d = item.height * SCALE * scale;
+  const w = (item.actualWidth || item.width) * SCALE * scale;
+  const d = (item.actualHeight || item.height) * SCALE * scale;
 
   switch (item.type) {
 
@@ -163,8 +163,362 @@ const buildFurnitureMesh = (item) => {
       break;
     }
 
+    case 'loveSeat': {
+      // Similar to sofa but smaller
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(w, 16, d * 0.6), mat());
+      seat.position.set(0, 8, d * 0.1);
+      group.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(w, 24, d * 0.2), darkMat());
+      back.position.set(0, 12, -d * 0.4);
+      group.add(back);
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(w * 0.15, 24, d * 0.6), darkMat());
+      armL.position.set(-w * 0.42, 12, d * 0.1);
+      group.add(armL);
+      const armR = armL.clone();
+      armR.position.set(w * 0.42, 12, d * 0.1);
+      group.add(armR);
+      break;
+    }
+
+    case 'consoleTable': {
+      // Narrow table for entryways
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 4, d), mat());
+      top.position.set(0, 32, 0);
+      group.add(top);
+      // Two legs
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(w * 0.2, 30, 5), darkMat());
+      const legL = leg.clone();
+      legL.position.set(-w * 0.35, 15, 0);
+      group.add(legL);
+      const legR = leg.clone();
+      legR.position.set(w * 0.35, 15, 0);
+      group.add(legR);
+      break;
+    }
+
+    case 'kingBed': {
+      // Larger bed variant
+      const mattress = new THREE.Mesh(new THREE.BoxGeometry(w, 14, d * 0.85), mat());
+      mattress.position.set(0, 14, d * 0.05);
+      group.add(mattress);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, 42, d * 0.1), darkMat());
+      head.position.set(0, 21, -d * 0.46);
+      group.add(head);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(w, 8, d), darkMat());
+      base.position.set(0, 4, 0);
+      group.add(base);
+      // Two pillows
+      const pillow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.4, 5, d * 0.15),
+        new THREE.MeshLambertMaterial({ color: '#FFFFFF' }));
+      pillow.position.set(-w * 0.25, 22, -d * 0.3);
+      group.add(pillow);
+      const pillow2 = pillow.clone();
+      pillow2.position.set(w * 0.25, 22, -d * 0.3);
+      group.add(pillow2);
+      break;
+    }
+
+    case 'tvStand': {
+      // TV stand / media unit
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, 30, d), mat());
+      body.position.set(0, 15, 0);
+      group.add(body);
+      // Screen representation (black panel on top)
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(w * 0.8, 2, d * 0.3),
+        new THREE.MeshLambertMaterial({ color: '#1a1a1a' }));
+      screen.position.set(0, 32, -d * 0.2);
+      group.add(screen);
+      break;
+    }
+
+    case 'tableLamp': {
+      // Table lamp
+      const base = new THREE.Mesh(new THREE.BoxGeometry(w, w, d), mat());
+      base.position.set(0, w * 0.5, 0);
+      group.add(base);
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 60, w * 0.3), darkMat());
+      pole.position.set(0, 40, 0);
+      group.add(pole);
+      const shade = new THREE.Mesh(new THREE.CylinderGeometry(w * 1.5, w * 1.5, w * 2, 16),
+        new THREE.MeshLambertMaterial({ color: '#FFE4B5' }));
+      shade.position.set(0, 65, 0);
+      group.add(shade);
+      break;
+    }
+
+    case 'plant': {
+      // Simple plant representation
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(w * 1.2, w * 1.3, d * 1.5, 12),
+        new THREE.MeshLambertMaterial({ color: '#8B4513' }));
+      pot.position.set(0, d * 0.75, 0);
+      group.add(pot);
+      // Foliage (green sphere on top)
+      const foliage = new THREE.Mesh(new THREE.SphereGeometry(w * 2, 8, 8),
+        new THREE.MeshLambertMaterial({ color: item.colour }));
+      foliage.position.set(0, d * 3.5, 0);
+      group.add(foliage);
+      break;
+    }
+
+    case 'mirror': {
+      // Wall mounted mirror
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w, d, 5), darkMat());
+      frame.position.set(0, d * 0.5, 2);
+      group.add(frame);
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, d * 0.9, 2),
+        new THREE.MeshPhongMaterial({ color: '#E8F4F8', shininess: 100 }));
+      glass.position.set(0, d * 0.5, 3);
+      group.add(glass);
+      break;
+    }
+
+    case 'shelf': {
+      // Wall shelf
+      const shelf = new THREE.Mesh(new THREE.BoxGeometry(w, 8, d), mat());
+      shelf.position.set(0, 40, 0);
+      group.add(shelf);
+      const bracket = new THREE.Mesh(new THREE.BoxGeometry(8, 35, d * 0.5), darkMat());
+      bracket.position.set(-w * 0.4, 21, d * 0.25);
+      group.add(bracket);
+      break;
+    }
+
+    case 'diningChair': {
+      // Chair seat
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(w, 8, d), mat());
+      seat.position.set(0, 18, 0);
+      group.add(seat);
+      // Backrest
+      const back = new THREE.Mesh(new THREE.BoxGeometry(w, 28, 5), darkMat());
+      back.position.set(0, 23, -d * 0.5);
+      group.add(back);
+      // Four legs
+      const legGeo = new THREE.BoxGeometry(4, 16, 4);
+      [
+        [-w * 0.3, 8, -d * 0.3],
+        [w * 0.3, 8, -d * 0.3],
+        [-w * 0.3, 8, d * 0.3],
+        [w * 0.3, 8, d * 0.3],
+      ].forEach((pos) => {
+        const leg = new THREE.Mesh(legGeo, darkMat());
+        leg.position.set(...pos);
+        group.add(leg);
+      });
+      break;
+    }
+
+    case 'coffeeTable': {
+      // Coffee table (lower, wider)
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 3, d), mat());
+      top.position.set(0, 20, 0);
+      group.add(top);
+      // Legs with stretcher for stability
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(w * 0.15, 18, 5), darkMat());
+      [-w * 0.35, w * 0.35].forEach((x) => {
+        const l = leg.clone();
+        l.position.set(x, 9, -d * 0.35);
+        group.add(l);
+        const l2 = leg.clone();
+        l2.position.set(x, 9, d * 0.35);
+        group.add(l2);
+      });
+      break;
+    }
+
+    case 'workTable': {
+      // Work table (similar to desk but slightly different proportions)
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 4, d), mat());
+      top.position.set(0, 36, 0);
+      group.add(top);
+      const panelL = new THREE.Mesh(new THREE.BoxGeometry(5, 34, d), darkMat());
+      panelL.position.set(-w * 0.48, 17, 0);
+      group.add(panelL);
+      const panelR = panelL.clone();
+      panelR.position.set(w * 0.48, 17, 0);
+      group.add(panelR);
+      break;
+    }
+
+    case 'computerDesk': {
+      // Computer desk with monitor stand
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 4, d * 0.7), mat());
+      top.position.set(0, 36, -d * 0.1);
+      group.add(top);
+      const panelL = new THREE.Mesh(new THREE.BoxGeometry(5, 34, d * 0.7), darkMat());
+      panelL.position.set(-w * 0.48, 17, -d * 0.1);
+      group.add(panelL);
+      const panelR = panelL.clone();
+      panelR.position.set(w * 0.48, 17, -d * 0.1);
+      group.add(panelR);
+      // Monitor stand
+      const stand = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 3, 5), darkMat());
+      stand.position.set(0, 40, d * 0.4);
+      group.add(stand);
+      const monitorFrame = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 20, 3),
+        new THREE.MeshLambertMaterial({ color: '#1a1a1a' }));
+      monitorFrame.position.set(0, 52, d * 0.4);
+      group.add(monitorFrame);
+      break;
+    }
+
+    case 'singleBed': {
+      // Smaller bed variant
+      const mattress = new THREE.Mesh(new THREE.BoxGeometry(w, 14, d * 0.85), mat());
+      mattress.position.set(0, 14, d * 0.05);
+      group.add(mattress);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(w, 38, d * 0.1), darkMat());
+      head.position.set(0, 20, -d * 0.46);
+      group.add(head);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(w, 8, d), darkMat());
+      base.position.set(0, 4, 0);
+      group.add(base);
+      // Single pillow
+      const pillow = new THREE.Mesh(new THREE.BoxGeometry(w * 0.35, 5, d * 0.15),
+        new THREE.MeshLambertMaterial({ color: '#FFFFFF' }));
+      pillow.position.set(0, 22, -d * 0.3);
+      group.add(pillow);
+      break;
+    }
+
+    case 'dresser': {
+      // Dresser with drawers
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, 50, d), mat());
+      body.position.set(0, 25, 0);
+      group.add(body);
+      // Drawer divisions (visual)
+      [12, 26, 40].forEach((y) => {
+        const divider = new THREE.Mesh(new THREE.BoxGeometry(w * 0.95, 2, d * 0.95), darkMat());
+        divider.position.set(0, y, 0);
+        group.add(divider);
+      });
+      // Handles
+      const handles = new THREE.Mesh(new THREE.BoxGeometry(3, 8, 3),
+        new THREE.MeshLambertMaterial({ color: '#C0C0C0' }));
+      [12, 26, 40].forEach((y) => {
+        const h = handles.clone();
+        h.position.set(w * 0.4, y, d * 0.52);
+        group.add(h);
+      });
+      break;
+    }
+
+    case 'cabinet': {
+      // Storage cabinet
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, 60, d), mat());
+      body.position.set(0, 30, 0);
+      group.add(body);
+      // Door seam
+      const seam = new THREE.Mesh(new THREE.BoxGeometry(3, 58, d * 0.02), darkMat());
+      seam.position.set(0, 30, d * 0.5);
+      group.add(seam);
+      break;
+    }
+
+    case 'floorLamp': {
+      // Floor lamp
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(w * 1.5, w * 1.5, w * 0.8, 16),
+        new THREE.MeshLambertMaterial({ color: '#1a1a1a' }));
+      base.position.set(0, w * 0.4, 0);
+      group.add(base);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.2, w * 0.2, 120, 8),
+        darkMat());
+      pole.position.set(0, 70, 0);
+      group.add(pole);
+      const shade = new THREE.Mesh(new THREE.CylinderGeometry(w * 2.5, w * 2, w * 2.5, 16),
+        new THREE.MeshLambertMaterial({ color: '#FFE4B5' }));
+      shade.position.set(0, 110, 0);
+      group.add(shade);
+      break;
+    }
+
+    case 'painting': case 'wallArt': {
+      // Painting / wall art (flat)
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w, d, 5), darkMat());
+      frame.position.set(0, d * 0.5, 2);
+      group.add(frame);
+      const canvas = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, d * 0.9, 2),
+        new THREE.MeshLambertMaterial({ color: item.colour }));
+      canvas.position.set(0, d * 0.5, 3);
+      group.add(canvas);
+      break;
+    }
+
+    case 'ottoman': {
+      // Ottoman (padded cube)
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, w * 0.8, d), mat());
+      body.position.set(0, w * 0.4, 0);
+      group.add(body);
+      // Soft edge detail
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(w, 2, d),
+        new THREE.MeshLambertMaterial({ color: baseColour.clone().multiplyScalar(0.8) }));
+      edge.position.set(0, w * 0.85, 0);
+      group.add(edge);
+      break;
+    }
+
+    case 'bookcase': {
+      // Bookcase (similar to bookshelf)
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(w, 85, d), mat());
+      frame.position.set(0, 42, 0);
+      group.add(frame);
+      [18, 36, 54, 72].forEach((y) => {
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 3, d * 0.9), darkMat());
+        shelf.position.set(0, y, 0);
+        group.add(shelf);
+      });
+      break;
+    }
+
+    case 'rug': {
+      // Rug (flat plane)
+      const rug = new THREE.Mesh(new THREE.PlaneGeometry(w, d),
+        new THREE.MeshLambertMaterial({ color: item.colour }));
+      rug.rotation.x = -Math.PI / 2;
+      rug.position.set(0, 0.5, 0);
+      group.add(rug);
+      // Border edge
+      const edges = new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, d));
+      const border = new THREE.LineSegments(edges,
+        new THREE.LineBasicMaterial({ color: '#333333', linewidth: 2 }));
+      border.rotation.x = -Math.PI / 2;
+      border.position.set(0, 0.6, 0);
+      group.add(border);
+      break;
+    }
+
+    case 'bench': {
+      // Bench seating
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(w, 10, d * 0.7), mat());
+      seat.position.set(0, 18, 0);
+      group.add(seat);
+      // Support frame
+      const supportL = new THREE.Mesh(new THREE.BoxGeometry(8, 16, d), darkMat());
+      supportL.position.set(-w * 0.45, 8, 0);
+      group.add(supportL);
+      const supportR = supportL.clone();
+      supportR.position.set(w * 0.45, 8, 0);
+      group.add(supportR);
+      break;
+    }
+
+    case 'deskette': {
+      // Small desk variant
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 4, d * 0.7), mat());
+      top.position.set(0, 32, 0);
+      group.add(top);
+      // Single support leg on each side
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(8, 30, d * 0.6), darkMat());
+      const legL = leg.clone();
+      legL.position.set(-w * 0.45, 15, 0);
+      group.add(legL);
+      const legR = leg.clone();
+      legR.position.set(w * 0.45, 15, 0);
+      group.add(legR);
+      break;
+    }
+
     default: {
-      // Fallback plain box
+      // Fallback plain box with label
       const box = new THREE.Mesh(new THREE.BoxGeometry(w, 30, d), mat());
       box.position.set(0, 15, 0);
       group.add(box);
@@ -313,26 +667,27 @@ furniture.forEach((item) => {
 
       // Add or update
       
-  // Remove and rebuild if colour or shade changed
+  // Remove and rebuild if colour, shade, scale, or dimensions changed
       currentFurniture.forEach((item) => {
         if (meshMapRef.current[String(item.id)]) {
           const group = meshMapRef.current[String(item.id)];
           group.position.set(item.x * SCALE, 0, item.y * SCALE);
           group.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
           const stored = group.userData;
-          if (stored.colour !== item.colour || stored.shade !== item.shade || stored.scale !== item.scale) {
+          if (stored.colour !== item.colour || stored.shade !== item.shade || stored.scale !== item.scale || 
+              stored.actualWidth !== item.actualWidth || stored.actualHeight !== item.actualHeight) {
             scene.remove(group);
             delete meshMapRef.current[String(item.id)];
             const newGroup = buildFurnitureMesh(item);
             newGroup.position.set(item.x * SCALE, 0, item.y * SCALE);
-            newGroup.userData = { furnitureId: item.id, colour: item.colour, shade: item.shade, scale: item.scale };
+            newGroup.userData = { furnitureId: item.id, colour: item.colour, shade: item.shade, scale: item.scale, actualWidth: item.actualWidth, actualHeight: item.actualHeight };
             scene.add(newGroup);
             meshMapRef.current[String(item.id)] = newGroup;
           }
         } else {
           const group = buildFurnitureMesh(item);
           group.position.set(item.x * SCALE, 0, item.y * SCALE);
-          group.userData = { furnitureId: item.id, colour: item.colour, shade: item.shade, scale: item.scale };
+          group.userData = { furnitureId: item.id, colour: item.colour, shade: item.shade, scale: item.scale, actualWidth: item.actualWidth, actualHeight: item.actualHeight };
           scene.add(group);
           meshMapRef.current[String(item.id)] = group;
         }

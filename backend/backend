@@ -1,0 +1,294 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// In-memory storage for testing (replace with MongoDB when available)
+let users = [];
+let designs = [];
+
+// MongoDB Connection
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/furniture-visualizer';
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('✓ MongoDB connected successfully');
+})
+.catch((error) => {
+  console.warn('⚠ MongoDB connection error:', error.message);
+  console.log('ℹ Using in-memory storage for testing');
+});
+
+// Schemas
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const designSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  roomName: { type: String, required: true },
+  roomDimensions: {
+    width: { type: Number, required: true },
+    length: { type: Number, required: true },
+    height: { type: Number, required: true },
+  },
+  furniture: [
+    {
+      id: String,
+      name: String,
+      position: { x: Number, y: Number, z: Number },
+      rotation: { x: Number, y: Number, z: Number },
+      scale: { x: Number, y: Number, z: Number },
+      modelUrl: String,
+    },
+  ],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const User = mongoose.model('User', userSchema);
+const Design = mongoose.model('Design', designSchema);
+
+// Auth Routes
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if email already exists (in-memory or MongoDB)
+    let existingUser;
+    try {
+      existingUser = await User.findOne({ email });
+    } catch {
+      // MongoDB not available, use in-memory
+      existingUser = users.find(u => u.email === email);
+    }
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = Date.now().toString();
+    
+    const newUser = { id: userId, name, email, password: hashedPassword, createdAt: new Date() };
+    
+    // Try to save to MongoDB, fallback to in-memory
+    try {
+      const user = new User({ name, email, password: hashedPassword });
+      await user.save();
+      
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'secret_key', {
+        expiresIn: '7d',
+      });
+
+      res.status(201).json({ message: 'User registered', token, userId: user._id });
+    } catch {
+      // MongoDB failed, use in-memory
+      users.push(newUser);
+      
+      const token = jwt.sign({ userId }, process.env.JWT_SECRET || 'secret_key', {
+        expiresIn: '7d',
+      });
+
+      res.status(201).json({ 
+        message: 'User registered (testing mode)', 
+        token, 
+        userId,
+        notice: 'Running in test mode - data not persisted'
+      });
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Registration failed', error: error.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    let user;
+    try {
+      user = await User.findOne({ email });
+    } catch {
+      // MongoDB not available, use in-memory
+      user = users.find(u => u.email === email);
+    }
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const userId = user._id || user.id;
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET || 'secret_key', {
+      expiresIn: '7d',
+    });
+
+    const userData = {
+      id: userId,
+      name: user.name,
+      email: user.email,
+    };
+
+    res.status(200).json({ message: 'Login successful', token, user: userData, userId });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Login failed', error: error.message });
+  }
+});
+
+// Middleware for authentication
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// Design Routes
+app.post('/api/designs', authMiddleware, async (req, res) => {
+  try {
+    const { roomName, roomDimensions, furniture } = req.body;
+
+    const design = new Design({
+      userId: req.userId,
+      roomName,
+      roomDimensions,
+      furniture: furniture || [],
+    });
+
+    await design.save();
+    res.status(201).json({ message: 'Design created', design });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to create design', error: error.message });
+  }
+});
+
+app.get('/api/designs', authMiddleware, async (req, res) => {
+  try {
+    const designs = await Design.find({ userId: req.userId });
+    res.status(200).json({ designs });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch designs', error: error.message });
+  }
+});
+
+app.get('/api/designs/:id', authMiddleware, async (req, res) => {
+  try {
+    const design = await Design.findById(req.params.id);
+
+    if (!design) {
+      return res.status(404).json({ message: 'Design not found' });
+    }
+
+    if (design.userId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    res.status(200).json({ design });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch design', error: error.message });
+  }
+});
+
+app.put('/api/designs/:id', authMiddleware, async (req, res) => {
+  try {
+    const { roomName, roomDimensions, furniture } = req.body;
+
+    const design = await Design.findById(req.params.id);
+
+    if (!design) {
+      return res.status(404).json({ message: 'Design not found' });
+    }
+
+    if (design.userId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    design.roomName = roomName || design.roomName;
+    design.roomDimensions = roomDimensions || design.roomDimensions;
+    design.furniture = furniture || design.furniture;
+    design.updatedAt = Date.now();
+
+    await design.save();
+    res.status(200).json({ message: 'Design updated', design });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update design', error: error.message });
+  }
+});
+
+app.delete('/api/designs/:id', authMiddleware, async (req, res) => {
+  try {
+    const design = await Design.findById(req.params.id);
+
+    if (!design) {
+      return res.status(404).json({ message: 'Design not found' });
+    }
+
+    if (design.userId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    await Design.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Design deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete design', error: error.message });
+  }
+});
+
+// Health Check
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ message: 'Server is running' });
+});
+
+const PORT = process.env.PORT || 5000;
+
+try {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`API URL: http://localhost:${PORT}`);
+  });
+} catch (error) {
+  console.error('Failed to start server:', error.message);
+  process.exit(1);
+}
+
+module.exports = app;

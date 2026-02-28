@@ -80,21 +80,66 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
     grid.position.y = 0.05;
     scene.add(grid);
 
-    // Helper to create label texture
-    const makeLabel = (text) => {
+    // Helper to create detailed label with icon
+    const makeLabel = (text, type) => {
       const canvas = document.createElement('canvas');
       canvas.width = 256;
-      canvas.height = 64;
+      canvas.height = 96;
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = 'rgba(0,0,0,0)';
-      ctx.fillRect(0, 0, 256, 64);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 28px Arial';
+      ctx.fillRect(0, 0, 256, 96);
+      
+      // Furniture icons based on type
+      const icons = {
+        sofa: '🛋️', armchair: '🪑', loveSeat: '🛋️',
+        diningTable: '🍽️', coffeeTable: '☕', sideTable: '🏷️', deskTable: '📋', consoleTable: '📋',
+        bed: '🛏️', singleBed: '🛏️', kingBed: '🛏️',
+        wardrobe: '🚪', bookshelf: '📚', dresser: '🗄️', cabinet: '🗄️', tvStand: '📺',
+        desk: '💻', computerDesk: '💻',
+        lamp: '💡', tableLamp: '💡', plant: '🌿',
+        painting: '🖼️', mirror: '🪞', shelf: '📚', rug: '🧵', ottoman: '🪑', bookcase: '📚',
+      };
+      
+      const icon = icons[type] || '📦';
+      
+      // Draw icon
+      ctx.font = 'bold 48px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(text, 128, 32);
+      ctx.fillText(icon, 128, 30);
+      
+      // Draw text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(text, 128, 75);
+      
       const texture = new THREE.CanvasTexture(canvas);
       return texture;
+    };
+
+    // Helper to create arrow indicator
+    const makeArrow = (scale) => {
+      const arrowGroup = new THREE.Group();
+      const arrowMat = new THREE.MeshLambertMaterial({ color: '#FFFFFF', emissive: '#666666' });
+      
+      // Shaft (thin cylinder)
+      const shaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(scale * 0.08, scale * 0.08, scale * 0.3, 8),
+        arrowMat
+      );
+      shaft.position.set(0, 0, -scale * 0.15);
+      arrowGroup.add(shaft);
+      
+      // Arrowhead (cone)
+      const head = new THREE.Mesh(
+        new THREE.ConeGeometry(scale * 0.2, scale * 0.25, 8),
+        arrowMat
+      );
+      head.position.set(0, 0, -scale * 0.38);
+      head.rotation.x = Math.PI / 2;
+      arrowGroup.add(head);
+      
+      return arrowGroup;
     };
 
     // Animation loop
@@ -117,39 +162,97 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
       // Add or update
       currentFurniture.forEach((item) => {
         const scale = item.scale || 1;
-        const w = item.width * SCALE * scale;
-        const d = item.height * SCALE * scale;
+        const baseW = item.actualWidth || item.width;
+        const baseD = item.actualHeight || item.height;
+        const w = baseW * SCALE * scale;
+        const d = baseD * SCALE * scale;
         const isSelected = item.id === currentSelectedId;
         const colour = isSelected ? '#FF8C00' : item.colour;
 
         if (meshMapRef.current[String(item.id)]) {
           const mesh = meshMapRef.current[String(item.id)];
-          mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
-          mesh.material.color.set(colour);
-          mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
-
-          // Update label position
-          if (labelMapRef.current[String(item.id)]) {
-            labelMapRef.current[String(item.id)].position.set(
-              item.x * SCALE, 3, item.y * SCALE
+          const stored = mesh.userData;
+          
+          // Check if dimensions, scale, or colour changed
+          if (stored.actualWidth !== item.actualWidth || stored.actualHeight !== item.actualHeight || stored.scale !== item.scale || stored.colour !== item.colour || stored.rotation !== item.rotation) {
+            // Remove old mesh and recreate with new dimensions
+            scene.remove(mesh);
+            scene.remove(labelMapRef.current[String(item.id)]);
+            delete meshMapRef.current[String(item.id)];
+            delete labelMapRef.current[String(item.id)];
+            
+          // Create new mesh with updated dimensions
+            const newMesh = new THREE.Mesh(
+              new THREE.BoxGeometry(w, 3, d),
+              new THREE.MeshLambertMaterial({ 
+                color: colour,
+                emissive: isSelected ? new THREE.Color('#FFA500') : 0x000000,
+                emissiveIntensity: isSelected ? 0.3 : 0
+              })
             );
+            newMesh.position.set(item.x * SCALE, 1, item.y * SCALE);
+            newMesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
+            newMesh.userData = { furnitureId: item.id, actualWidth: item.actualWidth, actualHeight: item.actualHeight, scale: item.scale, colour: item.colour, rotation: item.rotation };
+            scene.add(newMesh);
+            meshMapRef.current[String(item.id)] = newMesh;
+            
+            // Add orientation arrow
+            const arrow = makeArrow(Math.min(w, d) * 0.5);
+            arrow.position.set(0, 2, -d * 0.42);
+            newMesh.add(arrow);
+            
+            // Recreate label
+            const labelTexture = makeLabel(item.label, item.type);
+            const labelMaterial = new THREE.SpriteMaterial({ map: labelTexture });
+            const sprite = new THREE.Sprite(labelMaterial);
+            sprite.scale.set(w * 1.2, d * 0.8, 1);
+            sprite.position.set(item.x * SCALE, 3, item.y * SCALE);
+            scene.add(sprite);
+            labelMapRef.current[String(item.id)] = sprite;
+          } else {
+            // Just update position, color, and rotation
+            mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
+            mesh.material.color.set(colour);
+            mesh.material.needsUpdate = true;
+            mesh.material.emissive.set(isSelected ? new THREE.Color('#FFA500') : 0x000000);
+            mesh.material.emissiveIntensity = isSelected ? 0.3 : 0;
+            mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
+            mesh.userData.colour = item.colour;
+            mesh.userData.rotation = item.rotation;
+
+            // Update label position
+            if (labelMapRef.current[String(item.id)]) {
+              labelMapRef.current[String(item.id)].position.set(
+                item.x * SCALE, 3, item.y * SCALE
+              );
+            }
           }
         } else {
           // Main furniture box
           const mesh = new THREE.Mesh(
             new THREE.BoxGeometry(w, 3, d),
-            new THREE.MeshBasicMaterial({ color: colour })
+            new THREE.MeshLambertMaterial({ 
+              color: colour,
+              emissive: isSelected ? new THREE.Color('#FFA500') : 0x000000,
+              emissiveIntensity: isSelected ? 0.3 : 0
+            })
           );
           mesh.position.set(item.x * SCALE, 1, item.y * SCALE);
-          mesh.userData = { furnitureId: item.id };
+          mesh.rotation.y = ((item.rotation || 0) * Math.PI) / 180;
+          mesh.userData = { furnitureId: item.id, actualWidth: item.actualWidth, actualHeight: item.actualHeight, scale: item.scale, colour: item.colour, rotation: item.rotation };
           scene.add(mesh);
           meshMapRef.current[String(item.id)] = mesh;
 
-          // Label sprite
-          const labelTexture = makeLabel(item.label);
+          // Orientation indicator (arrow pointing front of furniture)
+          const arrow = makeArrow(Math.min(w, d) * 0.5);
+          arrow.position.set(0, 2, -d * 0.42);
+          mesh.add(arrow);
+
+          // Label sprite with icon
+          const labelTexture = makeLabel(item.label, item.type);
           const labelMaterial = new THREE.SpriteMaterial({ map: labelTexture });
           const sprite = new THREE.Sprite(labelMaterial);
-          sprite.scale.set(w * 0.9, d * 0.4, 1);
+          sprite.scale.set(w * 1.2, d * 0.8, 1);
           sprite.position.set(item.x * SCALE, 3, item.y * SCALE);
           scene.add(sprite);
           labelMapRef.current[String(item.id)] = sprite;
@@ -219,8 +322,32 @@ function RoomCanvas2D({ room, furniture, onSelectFurniture, selectedId, onMoveFu
   const handleMouseMove = (e) => {
     if (!isDraggingRef.current || !selectedMeshRef.current) return;
     const pos = getWorldPosition(e);
-    const newX = pos.x - offsetRef.current.x;
-    const newZ = pos.z - offsetRef.current.z;
+    let newX = pos.x - offsetRef.current.x;
+    let newZ = pos.z - offsetRef.current.z;
+    
+    // Get furniture dimensions to calculate boundaries
+    const furnitureId = selectedMeshRef.current.userData.furnitureId;
+    const furniture = furnitureRef.current.find(f => f.id === furnitureId);
+    
+    if (furniture) {
+      const scale = furniture.scale || 1;
+      const baseW = furniture.actualWidth || furniture.width;
+      const baseD = furniture.actualHeight || furniture.height;
+      const halfWidth = (baseW * SCALE * scale) / 2;
+      const halfHeight = (baseD * SCALE * scale) / 2;
+      const roomW = room.width * SCALE;
+      const roomL = room.length * SCALE;
+      
+      // Constrain to room boundaries
+      const minX = -roomW / 2 + halfWidth;
+      const maxX = roomW / 2 - halfWidth;
+      const minZ = -roomL / 2 + halfHeight;
+      const maxZ = roomL / 2 - halfHeight;
+      
+      newX = Math.max(minX, Math.min(maxX, newX));
+      newZ = Math.max(minZ, Math.min(maxZ, newZ));
+    }
+    
     selectedMeshRef.current.position.x = newX;
     selectedMeshRef.current.position.z = newZ;
     if (labelMapRef.current[String(selectedMeshRef.current.userData.furnitureId)]) {

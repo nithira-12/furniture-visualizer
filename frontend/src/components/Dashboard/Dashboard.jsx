@@ -5,113 +5,136 @@ import Navbar from '../shared/Navbar';
 const styles = {
   page: {
     minHeight: '100vh',
-    backgroundColor: '#F5F0EB',
+    backgroundColor: '#f8f9fa',
   },
   content: {
-    maxWidth: '1100px',
+    maxWidth: '1200px',
     margin: '0 auto',
-    padding: '40px 24px',
+    padding: '48px 24px',
   },
   header: {
-    marginBottom: '32px',
+    marginBottom: '48px',
   },
   welcome: {
-    fontSize: '28px',
+    fontSize: '32px',
     fontWeight: '700',
-    color: '#2C1810',
+    color: '#111827',
   },
   subtitle: {
     fontSize: '15px',
-    color: '#8B6E5A',
-    marginTop: '6px',
+    color: '#6b7280',
+    marginTop: '8px',
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-    gap: '20px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '24px',
   },
   newCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
     padding: '32px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    border: '2px dashed #D4C5B5',
-    minHeight: '180px',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
+    border: '2px dashed #d1d5db',
+    minHeight: '200px',
+    transition: 'all 0.2s',
+  },
+  newCardHover: {
+    borderColor: '#2563eb',
+    backgroundColor: '#f0f9ff',
   },
   newCardIcon: {
-    fontSize: '36px',
-    color: '#5C3D2E',
-    marginBottom: '12px',
-    fontWeight: '300',
+    fontSize: '48px',
+    marginBottom: '16px',
   },
   newCardText: {
     fontSize: '16px',
     fontWeight: '600',
-    color: '#5C3D2E',
+    color: '#374151',
   },
   designCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
+    backgroundColor: '#ffffff',
+    borderRadius: '12px',
     padding: '24px',
-    boxShadow: '0 2px 12px rgba(92, 61, 46, 0.08)',
-    minHeight: '180px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    border: '1px solid #e5e7eb',
+    minHeight: '200px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
+    transition: 'all 0.2s',
+  },
+  designCardHover: {
+    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.1)',
+    borderColor: '#2563eb',
   },
   designName: {
     fontSize: '17px',
     fontWeight: '700',
-    color: '#2C1810',
+    color: '#111827',
     marginBottom: '8px',
   },
   designDate: {
     fontSize: '13px',
-    color: '#8B6E5A',
+    color: '#9ca3af',
+  },
+  designInfo: {
+    fontSize: '12px',
+    color: '#6b7280',
+    marginTop: '8px',
   },
   cardActions: {
     display: 'flex',
-    gap: '10px',
+    gap: '12px',
     marginTop: '20px',
   },
   editButton: {
     flex: 1,
     padding: '10px',
-    backgroundColor: '#5C3D2E',
-    color: '#FFFFFF',
-    borderRadius: '8px',
+    backgroundColor: '#2563eb',
+    color: '#ffffff',
+    borderRadius: '6px',
     fontSize: '13px',
     fontWeight: '600',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   deleteButton: {
     flex: 1,
     padding: '10px',
-    backgroundColor: 'transparent',
-    border: '1.5px solid #DC2626',
-    color: '#DC2626',
-    borderRadius: '8px',
+    backgroundColor: '#fee2e2',
+    border: '1px solid #fecaca',
+    color: '#dc2626',
+    borderRadius: '6px',
     fontSize: '13px',
     fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
   emptyState: {
     textAlign: 'center',
-    padding: '60px 20px',
-    color: '#8B6E5A',
+    padding: '80px 20px',
+    color: '#9ca3af',
   },
   emptyText: {
-    fontSize: '16px',
+    fontSize: '18px',
     marginBottom: '8px',
     fontWeight: '600',
-    color: '#2C1810',
+    color: '#374151',
   },
   emptySubtext: {
     fontSize: '14px',
-    color: '#8B6E5A',
+    color: '#9ca3af',
+  },
+  emptyIcon: {
+    fontSize: '64px',
+    marginBottom: '16px',
+    opacity: '0.5',
   },
   confirmOverlay: {
     position: 'fixed',
@@ -172,14 +195,43 @@ const styles = {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [designs, setDesigns] = useState([]);
   const [deleteId, setDeleteId] = useState(null);
 
+  // Declare all hooks first, before any conditional logic
   useEffect(() => {
+    // Protected route - redirect if not logged in
+    const token = localStorage.getItem('token');
+    const userJson = localStorage.getItem('user');
+    
+    if (!token || !userJson) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      JSON.parse(userJson);
+    } catch (e) {
+      console.error('Failed to parse user data:', e);
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      navigate('/login');
+      return;
+    }
+
+    // Load designs
     const saved = JSON.parse(localStorage.getItem('designs') || '[]');
     setDesigns(saved);
-  }, []);
+  }, [navigate]);
+
+  // Get user data safely
+  const userJson = localStorage.getItem('user');
+  let user = {};
+  try {
+    user = userJson ? JSON.parse(userJson) : {};
+  } catch (e) {
+    user = {};
+  }
 
   const handleNewDesign = () => {
     navigate('/designer');
@@ -219,32 +271,45 @@ function Dashboard() {
             style={styles.newCard}
             onClick={handleNewDesign}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#5C3D2E';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(92, 61, 46, 0.12)';
+              Object.assign(e.currentTarget.style, styles.newCardHover);
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#D4C5B5';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = '#d1d5db';
+              e.currentTarget.style.backgroundColor = '#ffffff';
             }}
           >
-            <div style={styles.newCardIcon}>+</div>
+            <div style={styles.newCardIcon}>🏗️</div>
             <div style={styles.newCardText}>New Design</div>
           </div>
 
           {designs.length === 0 ? (
             <div style={styles.emptyState}>
+              <div style={styles.emptyIcon}>📐</div>
               <div style={styles.emptyText}>No designs yet</div>
               <div style={styles.emptySubtext}>
-                Click "New Design" to get started
+                Create your first design to get started
               </div>
             </div>
           ) : (
             designs.map((design) => (
-              <div key={design.id} style={styles.designCard}>
+              <div 
+                key={design.id} 
+                style={styles.designCard}
+                onMouseEnter={(e) => {
+                  Object.assign(e.currentTarget.style, styles.designCardHover);
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }}
+              >
                 <div>
                   <div style={styles.designName}>{design.name}</div>
                   <div style={styles.designDate}>
-                    {new Date(design.createdAt).toLocaleDateString()}
+                    📅 {new Date(design.createdAt).toLocaleDateString()}
+                  </div>
+                  <div style={styles.designInfo}>
+                    📐 {design.width}m × {design.length}m
                   </div>
                 </div>
                 <div style={styles.cardActions}>
@@ -252,13 +317,13 @@ function Dashboard() {
                     style={styles.editButton}
                     onClick={() => handleEdit(design)}
                   >
-                    Edit
+                    ✏️ Edit
                   </button>
                   <button
                     style={styles.deleteButton}
                     onClick={() => handleDeleteConfirm(design.id)}
                   >
-                    Delete
+                    🗑 Delete
                   </button>
                 </div>
               </div>
